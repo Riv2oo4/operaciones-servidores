@@ -304,7 +304,7 @@ function vistaJugador(tk, base) {
 }
 const PUERTO = Number(process.env.PORT) || CONFIG.puerto;
 // En la nube (Railway u otro) hay una sola dirección pública
-const URL_PUBLICA = process.env.URL_PUBLICA || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '');
+let URL_PUBLICA = process.env.URL_PUBLICA || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '');
 function urls() {
   if (URL_PUBLICA) return [URL_PUBLICA.replace(/\/+$/, '') + '/'];
   const ips = [];
@@ -734,6 +734,12 @@ async function atender(req, res) {
 
 // Pase lo que pase con una petición, el servidor no se cae a media ronda
 const server = http.createServer((req, res) => {
+  // Si entran por un dominio (no por una IP de la red local), el juego está en internet:
+  // el QR debe apuntar a ese dominio y no se muestra el WiFi.
+  if (!URL_PUBLICA) {
+    const h = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+    if (h && !/^(localhost|\[.*\]|[\d.]+)(:\d+)?$/i.test(h)) { URL_PUBLICA = 'https://' + h; console.log('  Dirección pública detectada: ' + URL_PUBLICA); }
+  }
   atender(req, res).catch((err) => {
     console.error('  [error]', req.method, req.url, '-', err && err.message);
     try { if (!res.headersSent) json(res, 500, { error: 'Algo falló. Intenta de nuevo.' }); else res.end(); } catch (e) {}
