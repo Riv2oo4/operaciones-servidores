@@ -1,0 +1,40 @@
+:root {
+  --bg: #070b10;
+  --panel: #0f1720;
+  --panel2: #16212d;
+  --borde: #22313f;
+  --texto: #e6edf3;
+  --suave: #8b9bab;
+  --verde: #39ff88;
+  --verde2: #1fbf62;
+  --rojo: #ff4d6d;
+  --amarillo: #ffd43b;
+  --azul: #4dabf7;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--texto); font-family: var(--sans); }
+body { min-height: 100vh; }
+button { font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; color: #04120a; background: var(--verde); touch-action: manipulation; }
+button:disabled { opacity: .45; cursor: default; }
+button.sec { background: var(--panel2); color: var(--texto); border: 1px solid var(--borde); }
+button.peligro { background: var(--rojo); color: #fff; }
+input, textarea { font: inherit; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borde); background: #0a1118; color: var(--texto); outline: none; font-size: 17px; }
+input:focus, textarea:focus { border-color: var(--verde); }
+.mono { font-family: var(--mono); }
+.verde { color: var(--verde); }
+.rojo { color: var(--rojo); }
+.suave { color: var(--suave); }
+.panel { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 16px; }
+.fila { display: flex; gap: 10px; align-items: center; }
+.fila > * { flex: 1; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--borde); font-weight: 700; }
+.oculto { display: none !important; }
+.glitch { font-family: var(--mono); letter-spacing: .04em; text-shadow: 0 0 12px rgba(57,255,136,.45); }
+.parpadeo { animation: parp 1s steps(2) infinite; }
+@keyframes parp { 50% { opacity: 0; } }
+.sacudir { animation: sacudir .4s; }
+@keyframes sacudir { 0%,100% { transform: none } 20% { transform: translateX(-8px) } 40% { transform: translateX(8px) } 60% { transform: translateX(-5px) } 80% { transform: translateX(5px) } }
+.barra { height: 10px; border-radius: 99px; background: var(--panel2); overflow: hidden; }
+.barra > i { display: block; height: 100%; background: var(--verde); border-radius: 99px; transition: width .4s; }

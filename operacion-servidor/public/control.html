@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b10">
+<title>Control · Operación Servidor</title>
+<link rel="stylesheet" href="estilo.css">
+<style>
+  body { padding-bottom: 84px; }
+  main { max-width: 560px; margin: 0 auto; padding: 0 14px 20px; }
+  h2 { font-size: 12px; letter-spacing: .12em; color: var(--suave); font-family: var(--mono); margin: 22px 0 8px; text-transform: uppercase; }
+  a { color: var(--azul); }
+  select { width: 100%; padding: 12px; border-radius: 12px; background: var(--panel2); color: var(--texto); border: 1px solid var(--borde); font-size: 16px; }
+
+  /* Barra superior */
+  .barra-top { position: sticky; top: 0; z-index: 20; background: rgba(7,11,16,.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--borde); padding: 10px 14px; }
+  .barra-top .in { max-width: 560px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+  .barra-top .g { flex: 1; min-width: 0; }
+  .barra-top .g b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .barra-top .g small { color: var(--suave); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .turno { text-align: right; font-size: 12px; color: var(--suave); line-height: 1.25; flex: none; }
+  .turno b { display: block; font-family: var(--mono); font-size: 17px; color: var(--texto); }
+  .turno.poco b { color: var(--amarillo); }
+  .turno.fin b { color: var(--rojo); }
+
+  /* Tarjeta "Ahora" */
+  .ahora { margin-top: 14px; border-radius: 18px; padding: 16px; background: linear-gradient(160deg, #10202b, #0f1720); border: 1px solid var(--borde); }
+  .ahora .eti { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--verde); }
+  .ahora .tit { font-size: 24px; font-weight: 900; margin: 2px 0 2px; }
+  .ahora .est { color: var(--suave); line-height: 1.4; }
+  .ahora .reloj { font-family: var(--mono); font-size: 44px; font-weight: 900; line-height: 1.1; margin-top: 8px; }
+  .ahora .reloj.urgente { color: var(--rojo); }
+  .mini-btns { display: flex; gap: 8px; margin-top: 8px; }
+  .mini-btns button { flex: 1; padding: 9px 4px; font-size: 14px; }
+
+  /* Pasos */
+  .pasos { display: flex; gap: 4px; margin: 14px 0 0; }
+  .pasos div { flex: 1; text-align: center; font-size: 11px; color: var(--suave); line-height: 1.2; }
+  .pasos div i { display: block; height: 5px; border-radius: 9px; background: var(--panel2); margin-bottom: 5px; }
+  .pasos div.hecho i { background: var(--verde2); }
+  .pasos div.act { color: var(--texto); font-weight: 800; }
+  .pasos div.act i { background: var(--verde); box-shadow: 0 0 8px rgba(57,255,136,.6); }
+
+  /* Acción principal */
+  .principal { width: 100%; font-size: 19px; padding: 18px 12px; margin-top: 14px; border-radius: 16px; line-height: 1.25; }
+  .principal small { display: block; font-weight: 600; font-size: 13px; opacity: .75; margin-top: 3px; }
+  .hecho-msg { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(57,255,136,.08); border: 1px solid var(--verde2); line-height: 1.4; }
+
+  .guion { background: var(--panel); border-left: 4px solid var(--amarillo); border-radius: 10px; padding: 12px 14px; line-height: 1.5; font-size: 15px; }
+  .guion b { color: var(--amarillo); }
+  .respuesta { margin-top: 8px; padding: 10px 14px; border-radius: 10px; background: var(--panel); border: 1px dashed var(--borde); }
+  .respuesta .mono { font-size: 18px; font-weight: 800; color: var(--verde); }
+
+  /* Misiones */
+  .mision { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--panel); color: var(--texto); border: 1px solid var(--borde); padding: 12px 14px; margin-bottom: 8px; font-weight: 400; }
+  .mision .ic { font-size: 28px; flex: none; width: 34px; text-align: center; }
+  .mision .tx { flex: 1; min-width: 0; }
+  .mision .tx b { display: block; font-size: 16px; }
+  .mision .tx small { color: var(--suave); display: block; line-height: 1.3; }
+  .mision .min { font-family: var(--mono); color: var(--suave); font-size: 13px; flex: none; text-align: right; }
+  .mision.sug { border-color: var(--verde); background: rgba(57,255,136,.07); }
+  .mision.jugada { opacity: .55; }
+  .mision.actual { border-color: var(--azul); }
+  .etiqueta { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 99px; margin-left: 6px; vertical-align: middle; }
+  .etiqueta.sug { background: var(--verde); color: #04120a; }
+  .etiqueta.ok { background: var(--panel2); color: var(--suave); }
+  details { margin-top: 18px; }
+  details summary { color: var(--suave); cursor: pointer; padding: 8px 0; font-size: 14px; }
+
+  /* Equipos */
+  .eq { display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--borde); border-left: 5px solid; border-radius: 10px; margin-bottom: 6px; }
+  .eq .n { flex: 1; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eq .p { font-family: var(--mono); font-weight: 900; color: var(--verde); width: 44px; text-align: right; }
+  .eq button { padding: 7px 10px; font-size: 13px; }
+  .rk { display: flex; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--borde); font-size: 15px; }
+  .rk .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg { display: flex; gap: 8px; align-items: center; padding: 9px 10px; background: var(--panel); border-radius: 10px; margin-bottom: 6px; font-size: 14px; cursor: pointer; }
+  .msg span { flex: 1; word-break: break-word; }
+  .msg.tachado span { text-decoration: line-through; opacity: .5; }
+
+  /* Ajustes */
+  .rejilla { display: grid; gap: 8px; }
+  .g7 { grid-template-columns: repeat(7, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .rejilla button { font-size: 14px; white-space: nowrap; padding: 12px 4px; background: var(--panel2); color: var(--texto); border: 1px solid var(--borde); position: relative; }
+  .rejilla button.act { background: var(--verde); color: #04120a; border-color: var(--verde); }
+  .rejilla button .marca { position: absolute; top: 1px; right: 4px; font-size: 10px; }
+  .nota { color: var(--suave); font-size: 13px; line-height: 1.4; margin: 6px 0 0; }
+  .aviso-pin { margin-top: 14px; padding: 10px 14px; border-radius: 12px; background: #2a2412; border: 1px solid #6b5a14; color: #ffe066; font-size: 14px; line-height: 1.4; }
+  .zona-peligro button { width: 100%; margin-bottom: 8px; background: transparent; color: var(--rojo); border: 1px solid #5a1a28; }
+
+  /* Pestañas */
+  nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: #050809; border-top: 1px solid var(--borde); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  nav .in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  nav button { background: transparent; color: var(--suave); padding: 8px 2px; font-size: 13px; border-radius: 12px; font-weight: 700; }
+  nav button span { display: block; font-size: 21px; line-height: 1.2; }
+  nav button.act { background: var(--panel2); color: var(--texto); }
+
+  #pinCaja { padding-top: 18vh; text-align: center; }
+  #toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 40; background: var(--panel2); border: 1px solid var(--verde2); padding: 10px 16px; border-radius: 12px; font-weight: 700; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div id="pinCaja" class="oculto">
+  <div style="font-size:48px">🔐</div>
+  <h1 style="font-family:var(--mono);color:var(--verde);font-size:22px">Control de Hugo</h1>
+  <p class="suave" id="pinMsg">Escribe tu PIN</p>
+  <input id="pinInput" inputmode="numeric" autocomplete="off" style="max-width:200px;text-align:center;font-size:24px">
+  <div style="margin-top:12px"><button id="pinBtn">Entrar</button></div>
+</div>
+
+<div id="app" class="oculto">
+  <div class="barra-top"><div class="in">
+    <div class="g"><b id="tGrupo"></b><small id="tSub"></small></div>
+    <div class="turno oculto" id="turno"></div>
+  </div></div>
+
+  <main>
+    <!-- ============ RONDA ============ -->
+    <section id="tabRonda">
+      <div class="ahora">
+        <div class="eti" id="aEti"></div>
+        <div class="tit" id="aTit"></div>
+        <div class="est" id="aEst"></div>
+        <div id="aRelojCaja" class="oculto">
+          <div class="reloj" id="aReloj">0:00</div>
+          <div class="mini-btns">
+            <button class="sec" id="mas1">+1 min</button><button class="sec" id="mas2">+2 min</button><button class="sec" id="parar">Quitar reloj</button>
+          </div>
+        </div>
+        <div class="pasos" id="pasos"></div>
+      </div>
+
+      <div id="accion"></div>
+
+      <div id="cajaGuion">
+        <h2>Qué decir ahora</h2>
+        <div class="guion" id="guion"></div>
+        <div class="respuesta oculto" id="respuesta"></div>
+      </div>
+
+      <div id="cajaMsgs" class="oculto">
+        <h2>Mensajes · toca uno para ocultarlo del proyector</h2>
+        <div id="msgs"></div>
+      </div>
+
+      <div id="cajaSiguiente">
+        <h2 id="sigTitulo"></h2>
+        <div id="misiones"></div>
+      </div>
+      <details id="cajaCambiar">
+        <summary>Cambiar de misión sin terminar esta</summary>
+        <div id="misiones2" style="margin-top:8px"></div>
+      </details>
+    </section>
+
+    <!-- ============ EQUIPOS ============ -->
+    <section id="tabEquipos" class="oculto">
+      <h2>Jugadores de esta ronda</h2>
+      <div id="equipos"></div>
+      <p class="nota">+10 y −10 dan o quitan puntos extra (por ejemplo, a quien responda una pregunta tuya). ✕ saca a ese jugador del juego.</p>
+      <h2>Ranking de hoy · todos los grupos</h2>
+      <div id="ranking"></div>
+    </section>
+
+    <!-- ============ AJUSTES ============ -->
+    <section id="tabAjustes" class="oculto">
+      <div class="aviso-pin oculto" id="avisoPin">⚠️ Estás usando el PIN de fábrica (<b>2026</b>). Cámbialo en <span class="mono">config.json</span> antes del taller para que ningún alumno pueda entrar aquí.</div>
+
+      <h2>Grupo que está jugando <span id="sugerido" style="text-transform:none;letter-spacing:0"></span></h2>
+      <div class="rejilla g7" id="grupos"></div>
+      <p class="nota">Se elige solo según la hora y al guardar cada ronda. ✓ = ronda ya guardada hoy.</p>
+
+      <h2>Personaje de este grupo</h2>
+      <select id="personajes"></select>
+      <p class="nota">Cada grupo tiene un personaje y una contraseña distintos. Cambiarlo borra el avance de Huellas y Hackear.</p>
+
+      <h2>Dificultad</h2>
+      <div class="rejilla g3" id="modos"></div>
+      <p class="nota">Solo afecta a "Hackear la cuenta": en Avanzado la contraseña lleva mayúscula y un número disfrazado.</p>
+
+      <h2>Conexión</h2>
+      <p class="nota" style="margin-top:0">Dirección que abre el QR. Si los celulares no cargan, prueba otra:</p>
+      <select id="ips" style="margin-top:6px"></select>
+      <p class="nota">Pantalla del proyector: <a id="linkPantalla" target="_blank"></a></p>
+
+      <h2>Empezar de nuevo</h2>
+      <div class="zona-peligro">
+        <button id="reiniciar">Reiniciar esta ronda sin guardar</button>
+        <button id="borrarRk">Borrar el ranking de hoy</button>
+      </div>
+    </section>
+  </main>
+
+  <nav><div class="in">
+    <button data-tab="tabRonda" class="act"><span>▶️</span>Ronda</button>
+    <button data-tab="tabEquipos"><span>👥</span>Jugadores <b id="nEq"></b></button>
+    <button data-tab="tabAjustes"><span>⚙️</span>Ajustes</button>
+  </div></nav>
+</div>
+<div id="toast" class="oculto"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function aviso(t) { var x = $('toast'); x.textContent = t; x.classList.remove('oculto'); clearTimeout(aviso.t); aviso.t = setTimeout(function () { x.classList.add('oculto'); }, 2000); }
+  // Solo vuelve a pintar si el contenido cambió (así no se pierde un toque a medio camino)
+  function pintar(id, html) { var el = $(id); if (el.__h !== html) { el.innerHTML = html; el.__h = html; } }
+
+  // El PIN se quita de la barra de direcciones
+  var pin = new URLSearchParams(location.search).get('pin') || leer('os_pin') || '';
+  try { if (location.search) history.replaceState(null, '', location.pathname); } catch (e) {}
+  var st = null, offset = 0, es = null;
+
+  function hugo(accion, cuerpo) {
+    cuerpo = cuerpo || {}; cuerpo.pin = pin;
+    return fetch('/api/hugo/' + accion, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { if (r.status === 403) aviso('PIN incorrecto'); if (r.status === 429) aviso('Demasiados intentos, espera 1 min'); return r.json(); })
+      .catch(function () { aviso('Sin conexión con la laptop 📡'); });
+  }
+  function conectar() {
+    if (es) es.close();
+    es = new EventSource('/eventos?rol=control&pin=' + encodeURIComponent(pin));
+    var recibido = false;
+    es.onmessage = function (ev) {
+      recibido = true; guardar('os_pin', pin);
+      st = JSON.parse(ev.data); offset = st.ahora - Date.now();
+      $('pinCaja').classList.add('oculto'); $('app').classList.remove('oculto');
+      render();
+    };
+    es.onerror = function () {
+      if (recibido) return; // se reconecta solo
+      es.close();
+      $('pinMsg').textContent = pin ? 'PIN incorrecto o sin conexión. Intenta de nuevo (tras 5 fallos hay que esperar 1 minuto).' : 'Escribe tu PIN';
+      $('pinCaja').classList.remove('oculto'); $('app').classList.add('oculto');
+    };
+  }
+  $('pinBtn').onclick = function () { pin = $('pinInput').value.trim(); conectar(); };
+  $('pinInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('pinBtn').click(); });
+
+  // ---------------- Datos de las misiones ----------------
+  var MISIONES = [
+    { id: 'ia', ic: '🤖', nombre: 'IA con dibujos', desc: 'Dibujan ☀️ y 🌙 para entrenar a su IA' },
+    { id: 'ppt', ic: '✊', nombre: 'IA con fotos', desc: 'Piedra, papel o tijera con la cámara' },
+    { id: 'huellas', ic: '🕵️', nombre: 'Huellas digitales', desc: 'Buscan datos personales en un perfil' },
+    { id: 'contrasenas', ic: '🔑', nombre: 'Hackear la cuenta', desc: 'Adivinan la contraseña. Mejor después de Huellas' },
+    { id: 'duelo', ic: '⚔️', nombre: 'Duelo de contraseñas', desc: 'Crean su contraseña y atacan la de otro jugador' },
+    { id: 'wifi', ic: '📶', nombre: 'WiFi gratis', desc: 'Sus mensajes secretos salen en el proyector' }
+  ];
+  function mision(id) { return MISIONES.find(function (m) { return m.id === id; }); }
+  var REVELAR = {
+    ia: ['🎯 Evaluar las IAs', 'Muestra en el proyector qué tanto acertó cada una'],
+    ppt: ['🎯 Mostrar resultados', 'Compara su propia mano contra las de los demás'],
+    huellas: ['📋 Mostrar las respuestas', 'Aparecen los 8 datos en el proyector'],
+    contrasenas: ['🔓 Revelar la contraseña', 'Y cuánto tardaría un hacker con las de ellos'],
+    duelo: ['📋 Terminar y revelar contraseñas', 'Las bóvedas que sobrevivan ganan +30'],
+    wifi: ['🚨 REVELAR AL HACKER', 'Todos los mensajes aparecen en el proyector con alarma']
+  };
+  var PASOS = {
+    normal: ['Explicas', 'Juegan', 'Revelas', 'Siguiente'],
+    duelo: ['Crean contraseña', 'Se atacan', 'Revelas', 'Siguiente'],
+    wifi: ['Mandan mensajes', 'Revelas al hacker', 'Con cifrado', 'Siguiente']
+  };
+  var GUION = {
+    lobby: '<b>Di:</b> "Hola, soy Hugo y estudio <b>Ingeniería en Computación</b>. Hoy por 15 minutos ustedes van a ser <b>hackers</b>."<br><b>Haz:</b> que cada quien escanee con su celular el <b>QR 1</b> (WiFi) y luego el <b>QR 2</b>, y escriba un apodo. Quien no tenga celular juega con un compañero. Cuando estén todos, elige la primera misión aquí abajo.',
+    ia: '<b>Di:</b> "¿Cómo sabe TikTok qué videos les gustan? ¿Cómo reconoce su cara el celular? Con <b>inteligencia artificial</b>. Y la IA no nace sabiendo: <b>aprende de ejemplos</b>. Ustedes van a entrenar una."<br><b>Al revelar, di:</b> "La IA no piensa: compara con lo que ya vio. Si le enseñan poco o mal, se equivoca."',
+    ppt: '<b>Di:</b> "¿Cómo se desbloquea su celular con la cara? Con una IA que aprendió con fotos. Ustedes van a enseñarle a una a jugar <b>piedra, papel o tijera</b>."<br><b>Haz:</b> que usen un <b>fondo liso</b> (mesa o cuaderno) y que la mano llene la foto. Con 2 fotos de cada gesto ya pueden pedir el <b>reto</b>.<br><b>Al revelar, di:</b> "Con sus manos acierta, con las de otros falla: eso es <b>sesgo</b>."',
+    huellas: '<b>Di:</b> "Un hacker de verdad casi nunca adivina: <b>investiga</b>. Este es el perfil de Diego. Busquen todo lo que publicó sin pensar."<br><b>Al revelar, pregunta:</b> "¿Quién de ustedes tiene publicado su cumpleaños o el nombre de su mascota?" 🙋',
+    contrasenas: '<b>Di:</b> "Diego usa como contraseña algo de su perfil. Con lo que encontraron, ¡entren a su cuenta! Y luego inventen una que nadie pueda romper."<br><b>Al revelar, di:</b> "Una contraseña hecha con datos de tu perfil se rompe en menos de 1 segundo. Usen una <b>frase larga</b> con símbolos."',
+    duelo: '<b>Di:</b> "Cada quien crea la contraseña de su bóveda. Que no la vea nadie."<br><b>Al iniciar el ataque, di:</b> "¡Ahora descifren la de su objetivo! Verde = letra en su lugar. Amarillo = está, pero en otro lugar."<br><b>Al revelar, di:</b> "Las cortas cayeron, las largas sobrevivieron. Y una computadora prueba miles de millones por segundo."',
+    wifi: '<b>Di:</b> "Están en un WiFi <b>gratis</b>. Escriban un mensaje secreto para un amigo."<br><b>Haz:</b> espera como 1 minuto y revela al hacker. <b>Di:</b> "Así de fácil se espía en un WiFi abierto."<br><b>Al activar el cifrado, di:</b> "Ahora con candado 🔒 el hacker solo ve basura. Eso es <b>https</b>, y lo que hace WhatsApp."',
+    final: '<b>Di:</b> "Hoy entrenaron una IA y pensaron como hackers para aprender a defenderse. <b>Eso es Ingeniería en Computación</b>: IA, ciberseguridad, redes y desarrollo." Felicita al podio 🏆.<br><b>Haz:</b> cuando se vayan, guarda la ronda.'
+  };
+
+  // ---------------- Pestañas ----------------
+  var tabActual = 'tabRonda';
+  function verTab(t) {
+    tabActual = t;
+    ['tabRonda', 'tabEquipos', 'tabAjustes'].forEach(function (x) { $(x).classList.toggle('oculto', x !== t); });
+    Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) { b.classList.toggle('act', b.getAttribute('data-tab') === t); });
+    window.scrollTo(0, 0);
+  }
+
+  // ---------------- Render ----------------
+  function botonMision(m, sugerida) {
+    var jugada = st.jugadas.indexOf(m.id) >= 0, actual = st.fase === m.id;
+    return '<button class="mision' + (sugerida ? ' sug' : '') + (jugada && !actual ? ' jugada' : '') + (actual ? ' actual' : '') + '" data-f="' + m.id + '"><span class="ic">' + m.ic + '</span>' +
+      '<span class="tx"><b>' + m.nombre + (sugerida ? '<span class="etiqueta sug">SUGERIDA</span>' : '') + (actual ? '<span class="etiqueta ok">AHORA</span>' : jugada ? '<span class="etiqueta ok">✓ JUGADA</span>' : '') + '</b><small>' + m.desc + '</small></span>' +
+      '<span class="min">' + (st.minutos[m.id] || '?') + ' min</span></button>';
+  }
+  function listaMisiones(conFinal) {
+    var sug = (st.plan || []).filter(function (id) { return st.jugadas.indexOf(id) < 0 && id !== st.fase; })[0];
+    var h = MISIONES.filter(function (m) { return m.id !== st.fase; }).map(function (m) { return botonMision(m, m.id === sug); }).join('');
+    if (conFinal) h += '<button class="mision' + (!sug ? ' sug' : '') + '" data-f="final"><span class="ic">🏆</span><span class="tx"><b>Terminar: podio y ranking' + (!sug ? '<span class="etiqueta sug">SUGERIDA</span>' : '') + '</b><small>Muestra a los ganadores de este grupo</small></span></button>';
+    return h;
+  }
+
+  function render() {
+    var g = st.grupos[st.grupo] || {}, f = st.fase, rev = st.revelado, m = mision(f);
+    var modoTxt = { basico: 'Básico', practico: 'Práctico', avanzado: 'Avanzado' }[st.modo];
+    $('tGrupo').textContent = 'Grupo ' + st.grupo + ' · ' + (g.nombre || '');
+    $('tSub').textContent = st.equipos.length + (st.equipos.length === 1 ? ' jugador' : ' jugadores') + ' · ' + st.personaje + ' · ' + modoTxt;
+    $('nEq').textContent = st.equipos.length ? '(' + st.equipos.length + ')' : '';
+
+    // --- Tarjeta "Ahora", pasos y acción principal ---
+    var eti, tit, est, pasos = null, paso = 0, accion = '', siguiente = false;
+    if (f === 'lobby') {
+      eti = 'INICIO'; tit = '🏁 Entrando al servidor';
+      est = st.equipos.length ? st.equipos.length + ' jugador(es) conectados. El proyector muestra los QR.' : 'El proyector muestra los QR. Aún no entra nadie.';
+      siguiente = true;
+    } else if (f === 'final') {
+      eti = 'FIN DE LA RONDA'; tit = '🏆 Podio y ranking'; est = 'El proyector muestra a los ganadores de este grupo.';
+      var sg = st.siguienteGrupo !== st.grupo ? 'y pasar al grupo ' + st.siguienteGrupo : 'y dejar listo el servidor';
+      accion = st.equipos.length
+        ? '<button class="principal" id="btnGuardar">💾 Guardar ronda<small>' + sg + ' · suma estos puntos al ranking de hoy</small></button>'
+        : '<div class="hecho-msg">No hay jugadores en esta ronda. Vuelve al inicio para recibir al siguiente grupo.</div><button class="principal" data-f="lobby">🏁 Ir al inicio (QR)</button>';
+    } else {
+      eti = 'MISIÓN ' + st.numMision; tit = m.ic + ' ' + m.nombre;
+      if (f === 'duelo') {
+        pasos = PASOS.duelo;
+        var listos = st.equipos.filter(function (e) { return e.duelo.lista; }).length;
+        if (st.dueloEtapa === 'crear') {
+          paso = 0; est = listos + ' de ' + st.equipos.length + ' jugadores ya crearon su contraseña.';
+          accion = '<button class="principal peligro" id="btnAtaque">⚔️ Iniciar ataque<small>' + (listos < st.equipos.length ? 'A los que falten les tocará "1234"' : 'Todos listos') + '</small></button>';
+        } else if (!rev) {
+          paso = 1; est = 'Bóvedas abiertas: ' + st.equipos.filter(function (e) { return e.duelo.abiertaPor; }).length + ' de ' + st.equipos.length + '.';
+          accion = '<button class="principal" id="btnRevelar">' + REVELAR.duelo[0] + '<small>' + REVELAR.duelo[1] + '</small></button>';
+        } else { paso = 3; est = 'Las contraseñas están en el proyector.'; siguiente = true; }
+      } else if (f === 'wifi') {
+        pasos = PASOS.wifi;
+        if (!rev) {
+          paso = 0; est = (st.totalMensajes || 0) + ' mensajes enviados. El proyector todavía no los muestra.';
+          accion = '<button class="principal peligro" id="btnRevelar">' + REVELAR.wifi[0] + '<small>' + REVELAR.wifi[1] + '</small></button>';
+        } else if (!st.cifrado) {
+          paso = 1; est = 'Los mensajes están en el proyector.';
+          accion = '<button class="principal" id="btnCifrado">🔒 Activar cifrado<small>Ahora sus mensajes nuevos se verán como basura</small></button>';
+        } else { paso = 2; est = 'Cifrado activo: que manden otro mensaje con el candado 🔒.'; siguiente = true; }
+      } else {
+        pasos = PASOS.normal;
+        if (!rev) {
+          paso = 1; est = 'Todos están jugando en sus celulares.';
+          accion = '<button class="principal" id="btnRevelar">' + REVELAR[f][0] + '<small>' + REVELAR[f][1] + '</small></button>';
+        } else { paso = 3; est = 'Los resultados están en el proyector.'; siguiente = true; }
+      }
+    }
+    $('aEti').textContent = eti; $('aTit').textContent = tit; $('aEst').textContent = est;
+    pintar('pasos', pasos ? pasos.map(function (p, i) { return '<div class="' + (i < paso ? 'hecho' : i === paso ? 'act' : '') + '"><i></i>' + p + '</div>'; }).join('') : '');
+    $('pasos').classList.toggle('oculto', !pasos);
+    if (siguiente && m) accion = '<div class="hecho-msg">✅ <b>Listo.</b> Comenta el resultado con el grupo y elige qué sigue.</div>';
+    pintar('accion', accion);
+
+    // --- Guion y respuesta ---
+    pintar('guion', (GUION[f] || '').replace(/Diego/g, esc(st.personaje)));
+    $('respuesta').classList.toggle('oculto', f !== 'contrasenas');
+    if (f === 'contrasenas') pintar('respuesta', '🔑 Respuesta (solo tú la ves): <span class="mono">' + esc(st.claveDiego) + '</span>');
+
+    // --- Mensajes del WiFi ---
+    $('cajaMsgs').classList.toggle('oculto', f !== 'wifi');
+    if (f === 'wifi') pintar('msgs', (st.interceptados || []).slice().reverse().map(function (x) {
+      return '<div class="msg' + (x.oculto ? ' tachado' : '') + '" data-msg="' + x.id + '"><b>' + x.icono + '</b><span>' + (x.cifrado ? '🔒 ' : '') + esc(x.texto) + '</span>' + (x.oculto ? '🙈' : '') + '</div>';
+    }).join('') || '<p class="nota">Aún no hay mensajes.</p>');
+
+    // --- Qué sigue ---
+    var usados = st.jugadas.reduce(function (a, id) { return a + (st.minutos[id] || 0); }, 0);
+    $('cajaSiguiente').classList.toggle('oculto', !siguiente);
+    $('cajaCambiar').classList.toggle('oculto', siguiente || f === 'final');
+    if (siguiente) {
+      $('sigTitulo').textContent = f === 'lobby' ? 'Elige la primera misión' : 'Qué sigue · llevas ' + usados + ' min de misiones';
+      pintar('misiones', listaMisiones(f !== 'lobby'));
+    } else if (f !== 'final') pintar('misiones2', listaMisiones(true) + '<button class="mision" data-f="lobby"><span class="ic">🏁</span><span class="tx"><b>Volver al inicio</b><small>Muestra otra vez los QR</small></span></button>');
+
+    // --- Equipos y ranking ---
+    pintar('equipos', st.equipos.map(function (e) {
+      return '<div class="eq" style="border-left-color:' + e.color + '"><span>' + e.icono + '</span><span class="n">' + esc(e.nombre) + '</span><span class="p">' + e.total + '</span>' +
+        '<button class="sec" data-p="' + e.id + '" data-d="10">+10</button><button class="sec" data-p="' + e.id + '" data-d="-10">−10</button><button class="sec" data-x="' + e.id + '" data-n="' + esc(e.nombre) + '">✕</button></div>';
+    }).join('') || '<p class="nota">Aún no entra nadie. Aparecen aquí cuando escanean el QR.</p>');
+    pintar('ranking', (st.ranking || []).map(function (r, i) {
+      return '<div class="rk"><span class="mono suave">' + (i + 1) + '</span><span>' + r.icono + '</span><span class="n">' + esc(r.equipo) + ' <span class="suave">· grupo ' + r.grupo + '</span></span><b class="mono verde">' + r.puntos + '</b></div>';
+    }).join('') || '<p class="nota">Se llena cada vez que guardas una ronda.</p>');
+
+    // --- Ajustes ---
+    $('avisoPin').classList.toggle('oculto', !st.pinPorDefecto);
+    $('sugerido').textContent = st.sugerido ? '· por la hora toca el ' + st.sugerido : '';
+    pintar('grupos', Object.keys(st.grupos).map(function (k) {
+      var hecho = (st.rondasGuardadas || []).indexOf(k) >= 0;
+      return '<button data-g="' + k + '" class="' + (k === st.grupo ? 'act' : '') + '">' + k + (hecho ? '<span class="marca">✓</span>' : '') + '</button>';
+    }).join(''));
+    pintar('modos', [['basico', '🟢 Básico'], ['practico', '🟡 Práctico'], ['avanzado', '🔴 Avanzado']].map(function (x) {
+      return '<button data-modo="' + x[0] + '" class="' + (x[0] === st.modo ? 'act' : '') + '">' + x[1] + '</button>';
+    }).join(''));
+    pintar('personajes', st.personajes.map(function (n, i) { return '<option value="' + i + '"' + (i === st.casoActual ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join(''));
+    pintar('ips', st.urls.map(function (u) { return '<option' + (u === st.url ? ' selected' : '') + '>' + esc(u) + '</option>'; }).join('') || '<option>Sin red WiFi</option>');
+    $('linkPantalla').href = st.url + 'pantalla?pin=' + encodeURIComponent(pin);
+    $('linkPantalla').textContent = st.url.replace(/^http:\/\//, '') + 'pantalla';
+    reloj();
+  }
+
+  function mmss(seg) { return Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0'); }
+  function reloj() {
+    if (!st) return;
+    var ahora = Date.now() + offset;
+    // Reloj de la misión
+    var enMision = st.fase !== 'lobby' && st.fase !== 'final';
+    $('aRelojCaja').classList.toggle('oculto', !enMision);
+    if (enMision) {
+      var r = st.finFase ? Math.round((st.finFase - ahora) / 1000) : null;
+      $('aReloj').textContent = r == null ? '—:—' : r > 0 ? mmss(r) : '⏰ ¡Tiempo!';
+      $('aReloj').classList.toggle('urgente', r != null && r <= 30);
+    }
+    // Turno del grupo en la estación (según el horario)
+    var t = st.rotacion, caja = $('turno');
+    if (t && ahora > t.inicio - 15 * 60000 && ahora < t.fin + 20 * 60000) {
+      var q = Math.round((t.fin - ahora) / 1000);
+      caja.classList.remove('oculto');
+      caja.classList.toggle('poco', q > 0 && q <= 300); caja.classList.toggle('fin', q <= 0);
+      caja.innerHTML = ahora < t.inicio ? 'Empiezan a las<b>' + t.hora + '</b>' : q > 0 ? 'Se van en<b>' + mmss(q) + '</b>' : 'Turno terminado<b>+' + mmss(-q) + '</b>';
+    } else caja.classList.add('oculto');
+  }
+  setInterval(reloj, 500);
+
+  // ---------------- Toques ----------------
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button, .msg'); if (!b) return;
+    var d = b.dataset;
+    if (d.tab) return verTab(d.tab);
+    if (b.id === 'btnRevelar') return hugo('revelar');
+    if (b.id === 'btnCifrado') return hugo('cifrado');
+    if (b.id === 'btnAtaque') return hugo('iniciarAtaque');
+    if (b.id === 'btnGuardar') {
+      if (confirm('¿Guardar los puntos de este grupo y preparar el siguiente?')) hugo('guardarRonda').then(function () { aviso('Ronda guardada ✓'); window.scrollTo(0, 0); });
+      return;
+    }
+    if (d.f) {
+      if (d.f === st.fase) return;
+      hugo('fase', { fase: d.f }).then(function () { $('cajaCambiar').open = false; window.scrollTo(0, 0); });
+    }
+    else if (d.p) hugo('puntos', { equipo: d.p, delta: Number(d.d) });
+    else if (d.x) { if (confirm('¿Sacar del juego a "' + d.n + '"?')) hugo('borrarEquipo', { equipo: d.x }); }
+    else if (d.g) {
+      if (d.g === st.grupo) return;
+      if (!st.equipos.length || confirm('Hay jugadores conectados. ¿Cambiar de grupo de todos modos? (No se borran, pero cambia el personaje.)')) hugo('grupo', { grupo: d.g });
+    }
+    else if (d.modo) hugo('modo', { modo: d.modo });
+    else if (d.msg) hugo('ocultarMensaje', { id: d.msg });
+  });
+  $('mas1').onclick = function () { hugo('tiempo', { min: 1 }); };
+  $('mas2').onclick = function () { hugo('tiempo', { min: 2 }); };
+  $('parar').onclick = function () { hugo('pararTiempo'); };
+  $('reiniciar').onclick = function () { if (confirm('¿Sacar a todos y borrar los puntos de ESTA ronda sin guardarlos?')) hugo('reiniciarRonda').then(function () { verTab('tabRonda'); }); };
+  $('borrarRk').onclick = function () { if (confirm('¿Borrar el ranking de HOY de todos los grupos? No se puede deshacer.')) hugo('borrarRanking').then(function () { aviso('Ranking borrado'); }); };
+  $('ips').onchange = function () { hugo('ip', { ip: $('ips').value }); };
+  $('personajes').onchange = function () { hugo('personaje', { i: Number($('personajes').value) }); };
+
+  if (pin) conectar(); else $('pinCaja').classList.remove('oculto');
+})();
+</script>
+</body>
+</html>

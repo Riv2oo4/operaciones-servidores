@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operación Servidor · Pantalla</title>
+<link rel="stylesheet" href="estilo.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: grid; grid-template-rows: auto 1fr; font-size: clamp(14px, 1.15vw, 22px); }
+  .top { display: flex; align-items: center; gap: 1.2em; padding: .8em 1.4em; border-bottom: 1px solid var(--borde); background: #050809; }
+  .top .titulo { font-family: var(--mono); font-weight: 900; font-size: 1.5em; color: var(--verde); letter-spacing: .06em; }
+  .top .grupo { font-weight: 800; font-size: 1.1em; }
+  .top .fase { margin-left: auto; font-family: var(--mono); color: var(--suave); }
+  .top .reloj { font-family: var(--mono); font-weight: 900; font-size: 2.2em; padding: .05em .5em; border-radius: .3em; background: var(--panel2); min-width: 4.2em; text-align: center; }
+  .top .reloj.urgente { background: var(--rojo); color: #fff; animation: parp 1s steps(2) infinite; }
+  .cuerpo { display: grid; grid-template-columns: 1fr 22em; min-height: 0; }
+  .principal { padding: 1.4em 1.8em; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+  .lateral { border-left: 1px solid var(--borde); padding: 1.2em; overflow: hidden; background: #0a0f15; }
+  .lateral h3 { margin: 0 0 .7em; font-family: var(--mono); color: var(--suave); font-size: .9em; letter-spacing: .12em; }
+  .marcador .f { display: flex; align-items: center; gap: .6em; padding: .55em .7em; border-radius: .6em; background: var(--panel); margin-bottom: .45em; border-left: .35em solid; transition: transform .3s; }
+  .marcador .f .n { flex: 1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .marcador .f .p { font-family: var(--mono); font-weight: 900; color: var(--verde); font-size: 1.15em; }
+  .marcador .pos { font-family: var(--mono); color: var(--suave); width: 1.4em; }
+  h1 { font-size: 2.6em; margin: 0 0 .2em; }
+  .sub { font-size: 1.25em; color: var(--suave); margin: 0 0 1em; line-height: 1.4; }
+  .vista { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .vista.act { display: flex; }
+
+  /* Lobby */
+  .pasos { display: grid; grid-template-columns: 1fr 1fr; gap: 2em; margin-top: .5em; }
+  .paso { background: var(--panel); border: 1px solid var(--borde); border-radius: 1.2em; padding: 1.4em; text-align: center; }
+  .paso .num { display: inline-grid; place-items: center; width: 2em; height: 2em; border-radius: 50%; background: var(--verde); color: #04120a; font-weight: 900; font-size: 1.2em; }
+  .paso h2 { margin: .5em 0 .6em; font-size: 1.5em; }
+  .qr { background: #fff; padding: .8em; border-radius: 1em; display: inline-block; }
+  .qr img { width: min(19em, 30vh); height: min(19em, 30vh); image-rendering: pixelated; display: block; }
+  .paso .dato { font-family: var(--mono); font-size: 1.3em; margin-top: .6em; color: var(--verde); word-break: break-all; }
+  .equipos-lobby { display: flex; flex-wrap: wrap; gap: .6em; margin-top: 1.2em; justify-content: center; }
+  .equipos-lobby .chip { font-size: 1.2em; padding: .4em 1em; animation: entra .5s; }
+  @keyframes entra { from { transform: scale(.4); opacity: 0; } }
+
+  /* Fichas: una por jugador, caben muchas */
+  .resumen { font-size: 1.5em; margin: 0 0 .6em; color: var(--suave); }
+  .resumen b { font-family: var(--mono); font-size: 1.5em; color: var(--verde); margin-right: .2em; }
+  .fichas { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5em, 1fr)); gap: .45em; align-content: start; overflow: hidden; }
+  .ficha { display: flex; align-items: center; gap: .5em; background: var(--panel); border: 1px solid var(--borde); border-left: .3em solid; border-radius: .5em; padding: .3em .6em; font-size: .92em; min-width: 0; }
+  .ficha .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+  .ficha .d { font-family: var(--mono); flex: none; color: var(--suave); }
+  .ficha.bien { background: #0f2d1c; border-color: var(--verde2); }
+  .ficha.bien .d { color: var(--verde); }
+  .ficha.mal { background: #2a0d14; border-color: #5a1a28; }
+  .ficha.mal .d { color: var(--rojo); }
+  .ficha .cas { display: inline-flex; gap: 2px; vertical-align: middle; }
+  .ficha .cas i { width: .5em; height: .9em; border-radius: 2px; background: var(--panel2); border: 1px solid var(--borde); }
+  .ficha .cas i.v { background: #2f9e44; border-color: #2f9e44; }
+  .equipos-lobby .cuenta { width: 100%; text-align: center; font-family: var(--mono); color: var(--verde); font-size: 1.2em; }
+  .equipos-lobby.muchos { gap: .35em; margin-top: .8em; }
+  .equipos-lobby.muchos .chip { font-size: .85em; padding: .2em .7em; }
+  .muchos-lobby .qr img { width: min(13em, 22vh); height: min(13em, 22vh); }
+  .muchos-lobby .paso { padding: .8em; }
+  .muchos-lobby .paso h2 { margin: .3em 0 .4em; font-size: 1.3em; }
+
+  /* Tarjetas de equipos */
+  .tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(15em, 1fr)); gap: 1em; align-content: start; }
+  .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-top: .35em solid; border-radius: 1em; padding: 1em 1.1em; }
+  .tarjeta .n { font-weight: 900; font-size: 1.2em; margin-bottom: .5em; }
+  .tarjeta .dato { font-family: var(--mono); font-size: 1.1em; margin: .3em 0; }
+  .barras .b { display: grid; grid-template-columns: 12em 1fr 5em; gap: 1em; align-items: center; margin-bottom: .8em; font-size: 1.2em; }
+  .barras .b .barra { height: 1.3em; }
+  .barras .b .v { font-family: var(--mono); font-weight: 900; text-align: right; }
+  .leccion { margin-top: auto; padding: 1em 1.3em; background: rgba(57,255,136,.08); border: 1px solid var(--verde2); border-radius: 1em; font-size: 1.35em; line-height: 1.4; }
+
+  /* Huellas */
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; min-height: 0; flex: 1; }
+  .pistas-rev { display: grid; grid-template-columns: 1fr 1fr; gap: .7em; }
+  .pistas-rev .p { background: var(--panel); border: 1px solid var(--borde); border-radius: .8em; padding: .7em .9em; animation: entra .4s backwards; }
+  .pistas-rev .p b { color: var(--verde); }
+  .pistas-rev .p small { display: block; color: var(--suave); margin-top: .3em; line-height: 1.3; }
+
+  /* Contraseñas */
+  .gran-clave { font-family: var(--mono); font-size: 3.4em; font-weight: 900; color: var(--rojo); background: #1a0a0e; border: 2px dashed var(--rojo); border-radius: .3em; padding: .2em .6em; display: inline-block; margin: .2em 0 .3em; }
+  table.tiempos { width: 100%; border-collapse: collapse; font-size: 1.25em; }
+  table.tiempos td { padding: .5em .4em; border-bottom: 1px solid var(--borde); }
+  table.tiempos td.t { font-family: var(--mono); font-weight: 900; text-align: right; }
+
+
+  /* Duelo */
+  .bovedas { display: grid; grid-template-columns: repeat(auto-fill, minmax(17em, 1fr)); gap: 1em; align-content: start; }
+  .boveda { background: var(--panel); border: 1px solid var(--borde); border-top: .35em solid; border-radius: 1em; padding: 1em 1.1em; text-align: center; transition: background .4s; }
+  .boveda.abierta { background: #2a0d14; border-color: var(--rojo); }
+  .boveda .cand { font-size: 3em; line-height: 1.1; }
+  .boveda .n { font-weight: 900; font-size: 1.2em; }
+  .boveda .cas { display: flex; gap: .25em; justify-content: center; margin: .5em 0; }
+  .boveda .cas i { width: 1.3em; height: 1.6em; border-radius: .3em; background: var(--panel2); border: 1px solid var(--borde); }
+  .boveda .cas i.v { background: #2f9e44; border-color: #2f9e44; }
+  table.tiempos td.c { font-family: var(--mono); font-weight: 900; font-size: 1.2em; letter-spacing: .08em; }
+
+  /* WiFi */
+  .chat-inocente { margin: auto; text-align: center; }
+  .chat-inocente .icono { font-size: 7em; }
+  .contador-msg { font-family: var(--mono); font-size: 4em; font-weight: 900; color: var(--azul); }
+  .paquetes { height: 2.4em; position: relative; overflow: hidden; margin-top: 1em; }
+  .paquetes i { position: absolute; top: .4em; font-style: normal; font-size: 1.4em; animation: viaja 2.5s linear infinite; }
+  @keyframes viaja { from { left: -5%; } to { left: 105%; } }
+  .terminal { flex: 1; background: #000; border: 1px solid #12301f; border-radius: 1em; padding: 1.2em 1.4em; font-family: var(--mono); color: var(--verde); overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; font-size: 1.15em; }
+  .terminal .l { margin: .25em 0; white-space: pre-wrap; word-break: break-all; animation: entra .3s; }
+  .terminal .l .eq { font-weight: 900; }
+  .terminal .l.cif { color: #4a5a52; }
+  body.alarma .top { background: #5a0012; animation: alarmaTop .5s infinite alternate; }
+  @keyframes alarmaTop { to { background: #a3001f; } }
+
+  /* Final */
+  .podio { display: flex; align-items: flex-end; justify-content: center; gap: 1.2em; margin: 1em 0; flex: 1; min-height: 0; overflow: hidden; }
+  .podio .col { text-align: center; width: 13em; }
+  .podio .bloque { border-radius: 1em;  display: grid; place-items: start center; padding-top: .6em; font-size: 2.6em; font-weight: 900; font-family: var(--mono); color: #04120a; }
+  .podio .nom { font-size: 1.4em; font-weight: 900; margin: .3em 0; }
+  .podio .pts { font-family: var(--mono); color: var(--verde); font-size: 1.3em; font-weight: 900; }
+  .acceso { font-family: var(--mono); font-size: 4em; font-weight: 900; color: var(--verde); text-align: center; text-shadow: 0 0 30px rgba(57,255,136,.6); animation: entra 1s; }
+  .ranking-global .f { display: flex; gap: .6em; padding: .35em 0; border-bottom: 1px solid var(--borde); }
+  .ranking-global .f .n { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  #sonido { position: fixed; bottom: 1em; left: 1em; z-index: 9; font-size: .8em; opacity: .8; }
+  #error { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: grid; place-items: center; background: var(--bg); z-index: 99; font-size: 1.5em; text-align: center; padding: 2em; }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="titulo">▌OPERACIÓN SERVIDOR</span>
+  <span class="grupo" id="grupo"></span>
+  <span class="fase" id="faseTxt"></span>
+  <span class="reloj oculto" id="reloj">0:00</span>
+</div>
+<div class="cuerpo">
+  <div class="principal">
+    <!-- Lobby -->
+    <div class="vista" id="vLobby">
+      <h1>¡Bienvenidos, hackers! 💻</h1>
+      <p class="sub">Cada quien juega con <b>su celular</b>. Si no tienes, juega junto a un compañero.</p>
+      <div class="pasos">
+        <div class="paso"><span class="num">1</span><h2>Conéctense al WiFi</h2><div class="qr"><img id="qrWifi" alt="QR WiFi"></div><div class="dato">📶 <span id="ssid"></span></div><div class="suave" style="margin-top:.4em">Abran la cámara y escaneen</div></div>
+        <div class="paso"><span class="num">2</span><h2>Entren al servidor</h2><div class="qr"><img id="qrUrl" alt="QR juego"></div><div class="dato" id="urlTxt"></div><div class="suave" style="margin-top:.4em">Escanea y escribe tu apodo de hacker</div></div>
+      </div>
+      <div class="equipos-lobby" id="lobbyEq"></div>
+    </div>
+
+    <!-- IA -->
+    <div class="vista" id="vIa">
+      <h1>🤖 Entrenen su IA</h1>
+      <p class="sub" id="iaSub"></p>
+      <div id="iaTarjetas"></div>
+      <div class="barras oculto" id="iaBarras"></div>
+      <div class="leccion" id="iaLeccion">💡 Así aprenden las IA de verdad: con <b>millones</b> de ejemplos etiquetados por personas. Su IA solo tiene los dibujos que ustedes le den.</div>
+    </div>
+
+
+    <!-- Piedra, papel o tijera -->
+    <div class="vista" id="vPpt">
+      <h1>✊✋✌️ IA con fotos</h1>
+      <p class="sub" id="pptSub">Tomen fotos de su mano haciendo piedra, papel y tijera. Luego pidan un <b>reto</b>: ¿su IA los reconoce?</p>
+      <div id="pptTarjetas"></div>
+      <div class="barras oculto" id="pptBarras"></div>
+      <div class="leccion" id="pptLeccion"></div>
+    </div>
+
+    <!-- Duelo de contraseñas -->
+    <div class="vista" id="vDuelo">
+      <h1>⚔️ Duelo de contraseñas</h1>
+      <p class="sub" id="dueloSub"></p>
+      <div id="dueloBovedas"></div>
+      <table class="tiempos oculto" id="dueloTabla"></table>
+      <div class="leccion" id="dueloLeccion"></div>
+    </div>
+
+    <!-- Huellas -->
+    <div class="vista" id="vHuellas">
+      <h1>🕵️ Huellas digitales</h1>
+      <p class="sub">Encuentren en el perfil de <b><span class="pj"></span></b> los datos personales que publicó sin pensar.</p>
+      <div id="huTarjetas"></div>
+      <div class="pistas-rev oculto" id="huPistas"></div>
+      <div class="leccion" id="huLeccion">💡 Todo lo que publicas queda en internet. Un hacker no "adivina": <b>investiga</b> tus redes sociales.</div>
+    </div>
+
+    <!-- Contraseñas -->
+    <div class="vista" id="vClaves">
+      <h1>🔑 Rompe la contraseña</h1>
+      <div id="clJuego">
+        <p class="sub">Usa lo que encontraste para entrar a la cuenta de <span class="pj"></span>. Después, inventa una contraseña que nadie pueda romper.</p>
+        <div id="clTarjetas"></div>
+      </div>
+      <div id="clRev" class="oculto">
+        <p class="sub" style="margin:0">La contraseña de <span class="pj"></span> era:</p>
+        <div class="gran-clave" id="claveDiego"></div>
+        <p style="font-size:1.3em;margin:.2em 0 1em">Un hacker con diccionario la rompe <b class="rojo">en menos de 1 segundo</b>. ¿Y las de ustedes?</p>
+        <table class="tiempos" id="clTabla"></table>
+      </div>
+      <div class="leccion">💡 Una buena contraseña es <b>larga</b> (una frase), mezcla <b>símbolos</b> y <b>no tiene nada</b> que publiques en redes. Ej: <span class="mono verde">MiPerro!ComePizza#Los3Lunes</span></div>
+    </div>
+
+    <!-- WiFi -->
+    <div class="vista" id="vWifi">
+      <div id="wfInocente" class="chat-inocente">
+        <div class="icono">📶💬</div>
+        <h1>WiFi gratis</h1>
+        <p class="sub">Mándense mensajes secretos en el <b>ChatSalón</b>. Nadie más los puede ver… ¿o sí? 🤔</p>
+        <div class="contador-msg" id="wfCuenta">0</div>
+        <div class="suave">mensajes enviados</div>
+        <div class="paquetes"><i>✉️</i><i style="animation-delay:-.8s">✉️</i><i style="animation-delay:-1.6s">✉️</i></div>
+      </div>
+      <div id="wfHacker" class="oculto" style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <h1 class="rojo mono" style="font-size:2.2em">⚠️ MENSAJES INTERCEPTADOS</h1>
+        <div class="terminal" id="terminal"></div>
+        <div class="leccion" id="wfLeccion" style="margin-top:1em"></div>
+      </div>
+    </div>
+
+    <!-- Final -->
+    <div class="vista" id="vFinal">
+      <div class="acceso">ACCESO CONCEDIDO</div>
+      <div class="podio" id="podio"></div>
+      <p class="suave" style="text-align:center;margin:0" id="finResto"></p>
+      <p class="sub" style="text-align:center">Todo lo que hicieron hoy lo construyen ingenieros en computación: <b class="verde">IA, ciberseguridad, redes y desarrollo web</b>.</p>
+    </div>
+  </div>
+
+  <div class="lateral">
+    <div id="latMarcador">
+      <h3>MARCADOR · GRUPO <span id="latGrupo"></span></h3>
+      <div class="marcador" id="marcador"></div>
+    </div>
+    <div id="latRanking" class="oculto">
+      <h3>🏆 RANKING DEL DÍA</h3>
+      <div class="ranking-global" id="rankingGlobal"></div>
+      <h3 style="margin-top:1.4em">📊 MEJORES GRUPOS (promedio)</h3>
+      <div class="ranking-global" id="rankingGrupos"></div>
+    </div>
+  </div>
+</div>
+<button id="sonido" class="sec">🔊 Activar sonido</button>
+<div id="error" class="oculto"></div>
+
+<script src="qrcode.js"></script>
+<script src="pantalla.js"></script>
+</body>
+</html>

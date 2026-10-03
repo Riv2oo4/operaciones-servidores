@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#070b10">
+<title>Operación Servidor</title>
+<link rel="stylesheet" href="estilo.css">
+<style>
+  body { padding-bottom: 40px; }
+  header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(7,11,16,.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--borde); }
+  header .eq { display: flex; align-items: center; gap: 8px; font-weight: 800; flex: 1; min-width: 0; }
+  header .eq span.n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .punto { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .pts { font-family: var(--mono); font-weight: 800; color: var(--verde); }
+  .reloj { font-family: var(--mono); font-weight: 800; padding: 4px 10px; border-radius: 8px; background: var(--panel2); }
+  .reloj.urgente { background: var(--rojo); color: #fff; }
+  main { padding: 16px; max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 4px 0 6px; }
+  h2 { font-size: 19px; margin: 18px 0 8px; }
+  p { line-height: 1.45; margin: 6px 0; }
+  .fase-tag { font-family: var(--mono); color: var(--verde); font-size: 13px; letter-spacing: .1em; }
+  .instr { background: var(--panel); border-left: 4px solid var(--verde); padding: 12px 14px; border-radius: 10px; margin: 10px 0 14px; line-height: 1.45; }
+
+  /* Unirse */
+  #pUnirse { text-align: center; padding-top: 6vh; }
+  .logo { font-size: 30px; font-weight: 900; margin: 10px 0; }
+  .term { font-family: var(--mono); color: var(--verde); text-align: left; background: #03080b; border: 1px solid #12301f; border-radius: 12px; padding: 14px; font-size: 14px; min-height: 96px; margin: 18px 0; white-space: pre-wrap; }
+
+  /* IA */
+  .lienzo-caja { position: relative; width: 100%; max-width: 360px; margin: 0 auto; aspect-ratio: 1; }
+  canvas#lienzo { width: 100%; height: 100%; background: #fff; border-radius: 16px; touch-action: none; display: block; }
+  .contadores { display: flex; gap: 10px; justify-content: center; margin: 12px 0; flex-wrap: wrap; }
+  .botones-clase { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .botones-clase button { font-size: 18px; padding: 16px 8px; }
+  .prediccion { text-align: center; font-size: 20px; font-weight: 800; min-height: 30px; margin: 10px 0; }
+  .resultado { text-align: center; padding: 18px; }
+  .resultado .grande { font-size: 54px; font-weight: 900; font-family: var(--mono); color: var(--verde); }
+
+
+  /* Piedra, papel o tijera */
+  .ppt-botones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .foto-btn { display: block; text-align: center; background: var(--verde); color: #04120a; font-weight: 800; border-radius: 12px; padding: 12px 4px; cursor: pointer; position: relative; overflow: hidden; }
+  .foto-btn .em { font-size: 36px; display: block; }
+  .foto-btn small { display: block; font-weight: 700; opacity: .8; }
+  .foto-btn input { position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 0; }
+  .foto-btn.sec { background: var(--panel2); color: var(--texto); border: 1px solid var(--borde); }
+  .foto-btn.ocupado { opacity: .5; pointer-events: none; }
+  .mini { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; min-height: 10px; }
+  .mini div { position: relative; }
+  .mini img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; display: block; }
+  .mini span { position: absolute; right: 1px; bottom: 0; font-size: 16px; }
+  .reto-caja { text-align: center; padding: 16px; border-radius: 16px; background: var(--panel); border: 1px solid var(--borde); margin-top: 10px; }
+  .reto-caja .gesto { font-size: 80px; line-height: 1.1; }
+  .versus { display: flex; justify-content: center; align-items: center; gap: 16px; font-size: 54px; margin: 6px 0; }
+  .versus small { display: block; font-size: 12px; color: var(--suave); }
+
+  /* Duelo de contraseñas */
+  .casillas { display: flex; gap: 5px; justify-content: center; margin: 5px 0; }
+  .casillas span { width: 34px; height: 40px; border-radius: 8px; display: grid; place-items: center; font-family: var(--mono); font-weight: 900; font-size: 19px; background: var(--panel2); border: 1px solid var(--borde); text-transform: uppercase; }
+  .casillas span.v { background: #2f9e44; border-color: #2f9e44; color: #fff; }
+  .casillas span.a { background: #e8a900; border-color: #e8a900; color: #1a1300; }
+  .casillas span.n { background: #2a3440; color: #8b9bab; }
+  .objetivo { text-align: center; padding: 14px; border-radius: 16px; background: var(--panel); border: 2px solid; margin-bottom: 12px; }
+  .leyenda { font-size: 13px; color: var(--suave); text-align: center; margin: 8px 0; line-height: 1.6; }
+  .leyenda b { padding: 1px 6px; border-radius: 5px; color: #fff; }
+  .mi-boveda { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--borde); }
+  #dueloInput, #dueloClave { font-family: var(--mono); font-size: 22px; letter-spacing: .15em; text-align: center; text-transform: lowercase; }
+
+  /* Perfil */
+  .perfil { background: #fff; color: #111; border-radius: 16px; overflow: hidden; }
+  .perfil .cab { display: flex; gap: 12px; align-items: center; padding: 14px; border-bottom: 1px solid #eee; }
+  .perfil .av { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg,#f58529,#dd2a7b,#8134af); display: grid; place-items: center; font-size: 30px; flex: none; }
+  .perfil .bio { padding: 10px 14px; font-size: 15px; border-bottom: 1px solid #eee; line-height: 1.6; }
+  .post { border-bottom: 1px solid #eee; }
+  .post .foto { font-size: 64px; text-align: center; padding: 18px 0; background: #f3f4f6; letter-spacing: 6px; }
+  .post .txt { padding: 10px 14px; font-size: 15px; line-height: 1.7; }
+  .post .com { padding: 0 14px 12px 28px; font-size: 14px; color: #333; line-height: 1.7; }
+  .post .likes { padding: 0 14px 4px; font-size: 13px; color: #666; }
+  .tap { border-radius: 5px; padding: 1px 2px; cursor: pointer; }
+  .tap.ok { background: #39ff88; color: #04120a; font-weight: 800; }
+  .tap.no { background: #ffd6dc; color: #b00020; text-decoration: line-through; }
+  .libreta { margin-top: 14px; }
+  .pista { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; margin-bottom: 8px; }
+  .pista .ic { font-size: 24px; }
+  .pista b { color: var(--verde); }
+  .pista small { color: var(--suave); display: block; margin-top: 2px; line-height: 1.35; }
+
+  /* Contraseñas */
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--panel); padding: 5px; border-radius: 14px; margin: 10px 0 14px; }
+  .tabs button { background: transparent; color: var(--suave); padding: 10px 4px; }
+  .tabs button.act { background: var(--panel2); color: var(--texto); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+  .chips .chip { cursor: pointer; font-size: 14px; }
+  .medidor { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; margin: 10px 0 6px; }
+  .medidor i { height: 10px; border-radius: 99px; background: var(--panel2); }
+  .consejos { margin: 8px 0 12px; padding-left: 18px; color: var(--suave); line-height: 1.5; }
+  .exito { text-align: center; padding: 18px; border-radius: 16px; background: rgba(57,255,136,.1); border: 1px solid var(--verde2); }
+  .exito .big { font-size: 42px; }
+  .intentos { font-family: var(--mono); color: var(--suave); margin-top: 8px; }
+
+  /* Chat WiFi */
+  .app-chat { background: #0b141a; border-radius: 16px; overflow: hidden; border: 1px solid var(--borde); }
+  .app-chat .barra-app { background: #1f2c34; padding: 12px 14px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+  .wifi-banner { padding: 8px 14px; font-size: 13px; background: #2a2f12; color: #ffe066; }
+  .wifi-banner.seguro { background: #0f2d1c; color: var(--verde); }
+  .mensajes { padding: 12px; min-height: 160px; display: flex; flex-direction: column; gap: 8px; }
+  .burbuja { align-self: flex-end; max-width: 85%; background: #005c4b; padding: 8px 12px; border-radius: 12px 12px 2px 12px; line-height: 1.35; word-break: break-word; }
+  .burbuja small { display: block; text-align: right; font-size: 11px; opacity: .7; margin-top: 2px; }
+  .enviar { display: flex; gap: 8px; padding: 10px; background: #1f2c34; }
+  .enviar input { border-radius: 99px; }
+  .enviar button { border-radius: 99px; padding: 10px 16px; }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #0f2d1c; border-top: 1px solid #1d4a31; font-weight: 700; }
+  .switch input { width: 26px; height: 26px; accent-color: var(--verde); }
+
+  /* Overlays */
+  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50; display: grid; place-items: center; padding: 24px; text-align: center; }
+  .overlay.alarma { background: rgba(120,0,20,.94); animation: alarma .6s infinite alternate; }
+  @keyframes alarma { to { background: rgba(200,0,40,.94); } }
+  .overlay h1 { font-size: 34px; font-family: var(--mono); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; background: var(--panel2); border: 1px solid var(--verde2); padding: 12px 18px; border-radius: 14px; font-weight: 800; max-width: 90vw; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.5); transition: opacity .3s; }
+  .toast.mal { border-color: var(--rojo); }
+
+  /* Final */
+  .lugar { font-size: 80px; text-align: center; margin: 10px 0 0; }
+  .desglose div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--borde); font-family: var(--mono); }
+  .lecciones li { margin-bottom: 8px; line-height: 1.4; }
+  .lista-eq { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+</style>
+</head>
+<body>
+<header id="cab" class="oculto">
+  <div class="eq"><span class="punto" id="cabColor"></span><span id="cabIcono"></span><span class="n" id="cabNombre"></span></div>
+  <span class="reloj oculto" id="reloj">5:00</span>
+  <span class="pts" id="cabPts">0 pts</span>
+</header>
+
+<main>
+  <!-- Unirse -->
+  <section id="pUnirse" class="oculto">
+    <div style="font-size:54px">🔐</div>
+    <div class="logo glitch">OPERACIÓN<br>SERVIDOR</div>
+    <div class="term" id="termUnirse"></div>
+    <div class="panel" style="text-align:left">
+      <label for="nombreEq" style="font-weight:700">Tu apodo de hacker</label>
+      <input id="nombreEq" maxlength="18" placeholder="Ej: CiberTigre" autocomplete="off" style="margin:10px 0 12px">
+      <button id="btnUnirse" style="width:100%;font-size:18px">ACCEDER AL SERVIDOR ▶</button>
+      <p class="suave" style="font-size:13px;margin-top:10px">Usa un apodo, no tu nombre completo. Va a salir en el proyector.</p>
+    </div>
+  </section>
+
+  <!-- Lobby -->
+  <section id="pLobby" class="oculto" style="text-align:center;padding-top:5vh">
+    <div style="font-size:60px">✅</div>
+    <h1 class="glitch verde">ACCESO INICIAL OK</h1>
+    <p>Ya estás dentro del servidor.</p>
+    <p class="suave">Espera la primera misión<span class="parpadeo">_</span></p>
+    <div class="lista-eq" id="lobbyEquipos"></div>
+  </section>
+
+  <!-- Fase 1: IA -->
+  <section id="pIa" class="oculto">
+    <div class="fase-tag mision-tag"></div>
+    <h1>🤖 Entrena tu IA</h1>
+    <div class="instr" id="iaInstr"></div>
+    <div id="iaJuego">
+      <div class="lienzo-caja"><canvas id="lienzo" width="320" height="320"></canvas></div>
+      <div class="contadores" id="iaContadores"></div>
+      <div class="botones-clase" id="iaBotones"></div>
+      <div class="fila" style="margin-top:10px">
+        <button class="sec" id="btnBorrar">🧽 Borrar</button>
+        <button class="sec" id="btnDeshacer">↩️ Quitar último</button>
+      </div>
+      <h2>🧪 Pon a prueba tu IA</h2>
+      <p class="suave">Dibuja algo y pregúntale qué es, sin guardarlo.</p>
+      <button class="sec" id="btnPredecir" style="width:100%">🤖 ¿Qué es este dibujo?</button>
+      <div class="prediccion" id="iaPred"></div>
+    </div>
+    <div id="iaResultado" class="panel resultado oculto"></div>
+  </section>
+
+
+  <!-- Misión: piedra, papel o tijera -->
+  <section id="pPpt" class="oculto">
+    <div class="fase-tag mision-tag"></div>
+    <h1>✊✋✌️ IA con fotos</h1>
+    <div id="pptJuego">
+      <div class="instr">Enséñale a tu IA a reconocer <b>piedra, papel y tijera</b> con fotos de tu mano.<br>📌 <b>Trucos:</b> usa siempre el <b>mismo fondo liso</b> (una mesa o un cuaderno), que la mano <b>llene la foto</b> y varía un poco el ángulo.</div>
+      <h2>1. Entrenar <span class="suave" style="font-size:14px">(mínimo 2 de cada una, mejor 4)</span></h2>
+      <div class="ppt-botones" id="pptBotones"></div>
+      <div class="mini" id="pptMini"></div>
+      <button class="sec" id="pptDeshacer" style="width:100%">↩️ Quitar la última foto</button>
+      <h2>2. Reto: ¿tu IA te reconoce? <span class="mono verde" id="pptRetos"></span></h2>
+      <div id="pptRetoCaja"></div>
+    </div>
+    <div id="pptResultado" class="panel resultado oculto"></div>
+  </section>
+
+  <!-- Misión: duelo de contraseñas -->
+  <section id="pDuelo" class="oculto">
+    <div class="fase-tag mision-tag"></div>
+    <h1>⚔️ Duelo de contraseñas</h1>
+    <div id="dueloCrear">
+      <div class="instr">Crea la <b>contraseña de tu bóveda</b>. Después, otro jugador va a intentar descifrarla… y tú la de alguien más. <b>Si tu bóveda sobrevive: +30 pts.</b><br><span class="rojo">No uses una contraseña real.</span></div>
+      <input id="dueloClave" maxlength="8" placeholder="········" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <p class="suave" id="dueloReglas" style="text-align:center"></p>
+      <button id="dueloGuardar" style="width:100%">🔒 GUARDAR CONTRASEÑA</button>
+      <div id="dueloGuardada" class="exito oculto" style="margin-top:12px"></div>
+    </div>
+    <div id="dueloAtacar" class="oculto">
+      <div id="dueloObjetivo"></div>
+      <div id="dueloHistorial"></div>
+      <div class="leyenda"><b style="background:#2f9e44">A</b> lugar correcto · <b style="background:#e8a900;color:#1a1300">A</b> está, pero en otro lugar · <b style="background:#2a3440">A</b> no está</div>
+      <input id="dueloInput" placeholder="" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button id="dueloBtn" style="width:100%;margin-top:10px">🔓 PROBAR</button>
+      <div class="mi-boveda" id="dueloMia"></div>
+    </div>
+    <div id="dueloFin" class="panel resultado oculto"></div>
+  </section>
+
+  <!-- Fase 2: Huellas -->
+  <section id="pHuellas" class="oculto">
+    <div class="fase-tag mision-tag"></div>
+    <h1>🕵️ Huellas digitales</h1>
+    <div class="instr">Este es el perfil de <b><span class="pj"></span></b>. Encuentra los <b>datos personales</b> que publicó sin darse cuenta y <b>toca la palabra exacta</b>.<br><span class="rojo">Si tocas algo que no es dato personal: −3 pts.</span></div>
+    <div class="panel" style="margin-bottom:12px">
+      <div class="fila"><b>Datos encontrados</b><span class="mono verde" style="text-align:right;font-weight:800" id="huCuenta">0/8</span></div>
+      <div class="barra" style="margin-top:8px"><i id="huBarra" style="width:0"></i></div>
+    </div>
+    <div class="perfil" id="perfil"></div>
+    <div class="libreta">
+      <h2>📒 Libreta del hacker</h2>
+      <div id="libreta"><p class="suave">Aquí aparecerán los datos que encuentres.</p></div>
+    </div>
+  </section>
+
+  <!-- Fase 3: Contraseñas -->
+  <section id="pClaves" class="oculto">
+    <div class="fase-tag mision-tag"></div>
+    <h1>🔑 Rompe la contraseña</h1>
+    <div class="tabs"><button id="tabA" class="act">🔓 Hackear a <span class="pj"></span></button><button id="tabB">🛡️ Proteger cuenta</button></div>
+    <div id="clA">
+      <div class="instr">Con lo que encontraste en su perfil, adivina la <b>contraseña de <span class="pj"></span></b>. Entre menos intentos uses, más puntos.</div>
+      <div id="hackForm">
+        <b>Tu libreta (toca para usar):</b>
+        <div class="chips" id="hackChips"></div>
+        <input id="hackInput" placeholder="Escribe la contraseña…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <div class="fila" style="margin-top:10px"><button class="sec" id="hackLimpiar" style="flex:0 0 auto">✕</button><button id="hackBtn">🔓 INTENTAR ENTRAR</button></div>
+        <div class="intentos" id="hackIntentos"></div>
+        <div id="hackPistas"></div>
+      </div>
+      <div id="hackExito" class="exito oculto">
+        <div class="big">🔓</div>
+        <h2 class="verde mono">¡ENTRASTE A LA CUENTA DE <span class="pj" style="text-transform:uppercase"></span>!</h2>
+        <p id="hackExitoTxt"></p>
+        <p>Ahora defiéndete tú 👉</p>
+        <button id="irB">🛡️ Proteger mi cuenta</button>
+      </div>
+    </div>
+    <div id="clB" class="oculto">
+      <div class="instr">Inventa una contraseña <b>nueva</b> que un hacker no pueda romper. <span class="rojo">Nunca escribas una contraseña que uses de verdad.</span></div>
+      <input id="protInput" placeholder="Inventa una contraseña…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="medidor" id="medidor"><i></i><i></i><i></i><i></i><i></i></div>
+      <p>Un hacker la descifra en: <b id="protTiempo" class="mono">—</b></p>
+      <ul class="consejos" id="protConsejos"></ul>
+      <button id="protBtn" style="width:100%">🛡️ GUARDAR Y PONERLA A PRUEBA</button>
+      <div id="protGuardada" class="panel oculto" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- Fase 4: WiFi -->
+  <section id="pWifi" class="oculto">
+    <div class="fase-tag mision-tag"></div>
+    <h1>📶 WiFi gratis</h1>
+    <div class="instr" id="wifiInstr"></div>
+    <div class="app-chat">
+      <div class="barra-app"><span>💬 ChatSalón</span><span class="suave" style="font-size:13px">en línea</span></div>
+      <div class="wifi-banner" id="wifiBanner">📶 Conectado a: <b>WiFi_Gratis</b> (abierta, sin contraseña)</div>
+      <div class="mensajes" id="wifiMensajes"></div>
+      <div class="switch oculto" id="wifiSwitch"><span>🔒 Conexión segura (cifrado)</span><input type="checkbox" id="wifiCifrar" checked></div>
+      <div class="enviar"><input id="wifiInput" maxlength="140" placeholder="Mensaje secreto…" autocomplete="off"><button id="wifiBtn">➤</button></div>
+    </div>
+  </section>
+
+  <!-- Final -->
+  <section id="pFinal" class="oculto">
+    <div style="text-align:center"><h1 class="glitch verde">ACCESO CONCEDIDO</h1></div>
+    <div class="lugar" id="finLugar"></div>
+    <p style="text-align:center;font-size:20px;font-weight:800" id="finTexto"></p>
+    <div class="panel desglose" id="finDesglose"></div>
+    <h2>Lo que aprendiste hoy</h2>
+    <ul class="lecciones">
+      <li>🤖 <b>La IA aprende de datos.</b> Si los datos son malos o pocos, la IA se equivoca.</li>
+      <li>🕵️ <b>Lo que publicas, un hacker lo usa.</b> Cuida tu mascota, cumpleaños y dirección.</li>
+      <li>🔑 <b>Contraseñas largas y raras.</b> Nada de nombre + año ni 1234.</li>
+      <li>📶 <b>En WiFi públicas, cualquiera puede espiar.</b> Busca el candado 🔒.</li>
+    </ul>
+    <p class="suave" style="text-align:center;margin-top:20px">Todo esto lo construye alguien que estudia <b class="verde">Ingeniería en Computación</b> 💻</p>
+  </section>
+
+  <section id="pDesconectado" class="oculto" style="text-align:center;padding-top:20vh">
+    <div style="font-size:50px">📡</div>
+    <h2>Conectando con el servidor…</h2>
+    <p class="suave">Revisa que estés conectado al WiFi del taller.</p>
+  </section>
+</main>
+
+<div id="alarma" class="overlay alarma oculto">
+  <div>
+    <div style="font-size:70px">🚨</div>
+    <h1>¡TE HACKEARON!</h1>
+    <p style="font-size:19px">Alguien en este WiFi leyó <b>todos</b> tus mensajes.<br>Mira el proyector 👀</p>
+    <button id="cerrarAlarma" style="margin-top:20px;background:#fff;color:#900">Entendido</button>
+  </div>
+</div>
+<div id="toast" class="toast oculto"></div>
+
+<script src="fuerza.js"></script>
+<script src="rasgos.js"></script>
+<script src="jugador.js"></script>
+</body>
+</html>

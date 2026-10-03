@@ -1,0 +1,55 @@
+{
+  "puerto": 8080,
+  "pinHugo": "2026",
+
+  "wifi": {
+    "nombre": "OperacionServidor",
+    "clave": "hacker2026"
+  },
+
+  "maxJugadores": 60,
+  "minutosRotacion": 30,
+  "planSugerido": ["ia", "huellas", "contrasenas", "wifi"],
+
+  "minutosPorFase": {
+    "ia": 5,
+    "ppt": 5,
+    "huellas": 3,
+    "contrasenas": 4,
+    "duelo": 4,
+    "wifi": 3
+  },
+
+  "duelo": {
+    "minimo": 4,
+    "maximo": 8,
+    "claveBot": "gato12"
+  },
+
+  "clasesIA": [
+    { "id": "sol",  "nombre": "Sol",  "emoji": "☀️" },
+    { "id": "luna", "nombre": "Luna", "emoji": "🌙" }
+  ],
+
+  "grupos": {
+    "A": { "nombre": "Básicos I",               "modo": "basico", "personaje": 0 },
+    "B": { "nombre": "Básicos II",              "modo": "basico", "personaje": 1 },
+    "C": { "nombre": "Bachillerato por Madurez", "modo": "practico", "personaje": 6 },
+    "D": { "nombre": "Bachillerato en Computación", "modo": "avanzado", "personaje": 3 },
+    "E": { "nombre": "Perito Contador Computación I", "modo": "avanzado", "personaje": 2 },
+    "F": { "nombre": "Perito Contador Computación II", "modo": "avanzado", "personaje": 4 },
+    "G": { "nombre": "Secretariado Bilingüe",   "modo": "practico", "personaje": 5 }
+  },
+
+  "horario": [
+    { "hora": "08:00", "grupo": "E" },
+    { "hora": "08:30", "grupo": "D" },
+    { "hora": "09:00", "grupo": "C" },
+    { "hora": "10:00", "grupo": "B" },
+    { "hora": "10:30", "grupo": "A" },
+    { "hora": "11:30", "grupo": "G" },
+    { "hora": "12:00", "grupo": "F" }
+  ],
+
+  "palabrasCensuradas": []
+}
