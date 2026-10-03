@@ -221,7 +221,7 @@
     cuerpo = cuerpo || {}; cuerpo.pin = pin;
     return fetch('/api/hugo/' + accion, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
       .then(function (r) { if (r.status === 403) aviso('PIN incorrecto'); if (r.status === 429) aviso('Demasiados intentos, espera 1 min'); return r.json(); })
-      .catch(function () { aviso('Sin conexión con la laptop 📡'); });
+      .catch(function () { aviso('Sin conexión con el servidor 📡'); });
   }
   function conectar() {
     if (es) es.close();
@@ -355,7 +355,7 @@
     pintar('accion', accion);
 
     // --- Guion y respuesta ---
-    pintar('guion', (GUION[f] || '').replace(/Diego/g, esc(st.personaje)));
+    pintar('guion', (f === 'lobby' && !st.wifi ? GUION.lobby.replace(/el <b>QR 1<\/b> \(WiFi\) y luego el <b>QR 2<\/b>/, 'el <b>QR</b> usando <b>sus datos móviles</b> (no WiFi)') : GUION[f] || '').replace(/Diego/g, esc(st.personaje)));
     $('respuesta').classList.toggle('oculto', f !== 'contrasenas');
     if (f === 'contrasenas') pintar('respuesta', '🔑 Respuesta (solo tú la ves): <span class="mono">' + esc(st.claveDiego) + '</span>');
 

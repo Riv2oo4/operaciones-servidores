@@ -119,7 +119,7 @@
     var w = st.wifi; // en la nube no hay WiFi propio: solo se muestra el QR del juego
     var clave = st.url + '|' + (w ? w.nombre + '|' + w.clave : '');
     if (qrHecho !== clave) {
-      $('qrWifi').parentNode.parentNode.style.display = w ? '' : 'none';
+      $('pasoWifi').style.display = w ? '' : 'none'; $('pasoDatos').style.display = w ? 'none' : '';
       if (w) { $('qrWifi').src = qr(wifiQr(w.nombre, w.clave)); $('ssid').textContent = w.nombre; }
       $('qrUrl').src = qr(st.url);
       $('urlTxt').textContent = st.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
