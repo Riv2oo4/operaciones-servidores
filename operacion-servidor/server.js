@@ -302,20 +302,24 @@ function vistaJugador(tk, base) {
   if (S.fase === 'huellas' || S.fase === 'contrasenas') p.perfil = caso().pub;
   return p;
 }
+const PUERTO = Number(process.env.PORT) || CONFIG.puerto;
+// En la nube (Railway u otro) hay una sola dirección pública
+const URL_PUBLICA = process.env.URL_PUBLICA || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : '');
 function urls() {
+  if (URL_PUBLICA) return [URL_PUBLICA.replace(/\/+$/, '') + '/'];
   const ips = [];
   const ifs = os.networkInterfaces();
   for (const k in ifs) for (const a of ifs[k]) if (a.family === 'IPv4' && !a.internal) ips.push(a.address);
   ips.sort((a, b) => puntajeIp(b) - puntajeIp(a));
-  return ips.map((ip) => 'http://' + ip + ':' + CONFIG.puerto + '/');
+  return ips.map((ip) => 'http://' + ip + ':' + PUERTO + '/');
 }
 function puntajeIp(ip) { return ip.startsWith('172.20.10.') ? 3 : ip.startsWith('192.168.') ? 2 : ip.startsWith('10.') ? 1 : 0; }
 function vistaPantalla(esControl) {
   const p = publico();
   const lista = urls();
   p.urls = lista;
-  p.url = (S.ip && lista.includes(S.ip)) ? S.ip : (lista[0] || 'http://localhost:' + CONFIG.puerto + '/');
-  p.wifi = CONFIG.wifi;
+  p.url = (S.ip && lista.includes(S.ip)) ? S.ip : (lista[0] || 'http://localhost:' + PUERTO + '/');
+  p.wifi = URL_PUBLICA ? null : CONFIG.wifi;
   p.minutos = CONFIG.minutosPorFase;
   p.jugadas = S.jugadas;
   const visibles = S.interceptados.filter((m) => !m.oculto);
@@ -669,7 +673,7 @@ function json(res, code, obj) { res.writeHead(code, { 'Content-Type': 'applicati
 // PIN: tras 5 intentos fallidos desde un mismo dispositivo, se bloquea 1 minuto
 const fallosPin = new Map();
 function pinCorrecto(req, pin) {
-  const ip = req.socket.remoteAddress || '?', f = fallosPin.get(ip) || { n: 0, hasta: 0 };
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '?', f = fallosPin.get(ip) || { n: 0, hasta: 0 };
   if (f.hasta > Date.now()) return 'bloqueado';
   if (String(pin) === String(CONFIG.pinHugo)) { fallosPin.delete(ip); return 'ok'; }
   f.n++;
@@ -743,15 +747,15 @@ server.on('error', (err) => {
   process.exit(1);
 });
 
-server.listen(CONFIG.puerto, '0.0.0.0', () => {
+server.listen(PUERTO, '0.0.0.0', () => {
   const lista = urls();
-  const base = lista[0] || 'http://localhost:' + CONFIG.puerto + '/';
+  const base = lista[0] || 'http://localhost:' + PUERTO + '/';
   console.log('\n  ========== OPERACIÓN SERVIDOR ==========');
   console.log('  Pantalla (proyector): ' + base + 'pantalla?pin=' + CONFIG.pinHugo);
   console.log('  Control (tu celular): ' + base + 'control?pin=' + CONFIG.pinHugo);
   console.log('  Jugadores:            ' + base);
   if (lista.length > 1) console.log('  Otras direcciones:    ' + lista.slice(1).join('  '));
-  if (!lista.length) console.log('  ⚠️  No estás conectado a ninguna red WiFi. Conéctate al hotspot y reinicia.');
+  if (!lista.length && !URL_PUBLICA) console.log('  ⚠️  No estás conectado a ninguna red WiFi. Conéctate al hotspot y reinicia.');
   if (String(CONFIG.pinHugo) === '2026') console.log('  ⚠️  Estás usando el PIN de fábrica (2026). Cámbialo en config.json antes del taller.');
   console.log('  Para detener: Ctrl + C\n');
 });

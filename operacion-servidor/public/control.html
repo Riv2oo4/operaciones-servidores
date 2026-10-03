@@ -396,7 +396,7 @@
     pintar('personajes', st.personajes.map(function (n, i) { return '<option value="' + i + '"' + (i === st.casoActual ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join(''));
     pintar('ips', st.urls.map(function (u) { return '<option' + (u === st.url ? ' selected' : '') + '>' + esc(u) + '</option>'; }).join('') || '<option>Sin red WiFi</option>');
     $('linkPantalla').href = st.url + 'pantalla?pin=' + encodeURIComponent(pin);
-    $('linkPantalla').textContent = st.url.replace(/^http:\/\//, '') + 'pantalla';
+    $('linkPantalla').textContent = st.url.replace(/^https?:\/\//, '') + 'pantalla';
     reloj();
   }
 

@@ -1,0 +1,7 @@
+{
+  "name": "operacion-servidor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "start": "node operacion-servidor/server.js" },
+  "engines": { "node": ">=18" }
+}
