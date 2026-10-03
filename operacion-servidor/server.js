@@ -7,6 +7,8 @@ const os = require('os');
 const crypto = require('crypto');
 
 const CONFIG = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+// En la nube el PIN se puede poner como variable PIN_HUGO, para no dejarlo escrito en el repositorio
+if (process.env.PIN_HUGO) CONFIG.pinHugo = String(process.env.PIN_HUGO).trim();
 const { PISTAS, CASOS } = require('./contenido');
 const Fuerza = require('./public/fuerza.js');
 const Rasgos = require('./public/rasgos.js');
@@ -673,7 +675,7 @@ function json(res, code, obj) { res.writeHead(code, { 'Content-Type': 'applicati
 // PIN: tras 5 intentos fallidos desde un mismo dispositivo, se bloquea 1 minuto
 const fallosPin = new Map();
 function pinCorrecto(req, pin) {
-  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '?', f = fallosPin.get(ip) || { n: 0, hasta: 0 };
+  const ip = String(req.headers['x-real-ip'] || '').trim() || String(req.headers['x-forwarded-for'] || '').split(',').pop().trim() || req.socket.remoteAddress || '?', f = fallosPin.get(ip) || { n: 0, hasta: 0 };
   if (f.hasta > Date.now()) return 'bloqueado';
   if (String(pin) === String(CONFIG.pinHugo)) { fallosPin.delete(ip); return 'ok'; }
   f.n++;
